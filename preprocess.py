@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 from utils import load_calib
-
+import matplotlib.pyplot as plt
 def get_rgbd(image_path, lidar_path, calib_path, output_size=(224, 224)):
     img = cv2.imread(image_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
@@ -25,6 +25,10 @@ def get_rgbd(image_path, lidar_path, calib_path, output_size=(224, 224)):
     for (u, v), d in zip(proj_xy.astype(int), cam_pts[:, 2]):  # Use cam_pts z-coordinate for depth
         if 0 <= u < img.shape[1] and 0 <= v < img.shape[0]:
             depth_map[v, u] = d
+
+    img = cv2.resize(img, output_size)
+    depth_map = cv2.resize(depth_map, output_size)
+    rgbd = np.dstack((img, depth_map)).astype(np.float32) / 255.0
 
     return rgbd
 
