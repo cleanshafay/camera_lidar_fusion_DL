@@ -9,17 +9,23 @@ def get_rgbd(image_path, lidar_path, calib_path, output_size=(224, 224)):
     lidar = np.fromfile(lidar_path, dtype=np.float32).reshape(-1, 4)[:, :3]
 
     P = calib['P2'].reshape(3,4)
-    Tr = calib['Tr_velo_to_cam'].reshape(3,4)
-    pts_hom = np.hstack((lidar, np.ones((lidar.shape[0],1))))
-    proj = (P @ Tr @ pts_hom.T).T
-    proj = proj[:, :2] / proj[:, 2:3]
+    Tr = calib['Tr_velo_to_cam']  # Already 3x4 from utils.py
+    pts_hom = np.hstack((lidar, np.ones((lidar.shape[0],1))))  # [N, 4]
+    
+    # First transform from velodyne to camera coordinates
+    cam_pts = (Tr @ pts_hom.T).T  # [N, 3]
+    cam_pts_hom = np.hstack((cam_pts, np.ones((cam_pts.shape[0], 1))))  # [N, 4]
+    
+    # Then project to image plane
+    proj = (P @ cam_pts_hom.T).T  # [N, 3]
+
+    proj_xy = proj[:, :2] / proj[:, 2:3]
 
     depth_map = np.zeros(img.shape[:2], dtype=np.float32)
-    for (u, v), d in zip(proj.astype(int), lidar[:, 2]):
+    for (u, v), d in zip(proj_xy.astype(int), cam_pts[:, 2]):  # Use cam_pts z-coordinate for depth
         if 0 <= u < img.shape[1] and 0 <= v < img.shape[0]:
             depth_map[v, u] = d
 
-    img = cv2.resize(img, output_size)
-    depth_map = cv2.resize(depth_map, output_size)
-    rgbd = np.dstack((img, depth_map)).astype(np.float32) / 255.0
     return rgbd
+
+

@@ -7,7 +7,7 @@ import torch
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print("Using device:", device)
 
-rgbd = get_rgbd("data/000000.png", "data/000000.bin", "data/calib.txt")
+rgbd = get_rgbd("data\\0000000000.png", "data\\0000000000.bin", "data\\calib.txt")
 transform = T.ToTensor()
 input_tensor = transform(rgbd).unsqueeze(0).to(device)  # [1, 4, 224, 224]
 
